@@ -40,7 +40,7 @@
             <a class="nav-link active bg-transparent text-white border-0 border-bottom border-primary" href="#">Active Inventory</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link text-muted border-0" href="{{ route('inventory.trashed') }}">Archive</a>
+            <a class="nav-link text-muted border-0" href="{{ route('inventory.trashed') }}">Trash</a>
         </li>
     </ul>
 
