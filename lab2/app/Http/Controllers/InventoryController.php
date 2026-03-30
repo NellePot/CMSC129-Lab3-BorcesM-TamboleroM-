@@ -10,7 +10,9 @@ class InventoryController extends Controller
     public function index()
     {
         $items = Inventory::latest()->paginate(10);
-        return view('inventory.index', compact('items'));
+
+        $criticalCount = Inventory::whereColumn('quantity', '<=', 'minimum_stock')->count();
+        return view('inventory.index', compact('items', 'criticalCount'));
     }
 
     public function create()
@@ -38,12 +40,12 @@ class InventoryController extends Controller
         return view('inventory.show', compact('item'));
     }
 
-    public function edit(Inventory $item)
+    public function edit(Inventory $inventory)
     {
-        return view('inventory.edit', compact('item'));
+        return view('inventory.edit', ['inventory' => $inventory]);
     }
 
-    public function update(Request $request, Inventory $item)
+    public function update(Request $request, Inventory $inventory)
     {
         $request->validate([
             'name' => 'required',
@@ -52,15 +54,15 @@ class InventoryController extends Controller
             'expiration_date' => 'nullable|date',
         ]);
 
-        $item->update($request->all());
+        $inventory->update($request->all());
 
         return redirect()->route('inventory.index')
             ->with('success', 'Supply updated!');
     }
 
-    public function destroy(Inventory $item)
+    public function destroy(Inventory $inventory)
     {
-        $item->delete();
+        $inventory->delete();
 
         return redirect()->route('inventory.index')
             ->with('success', 'Moved to trash.');
