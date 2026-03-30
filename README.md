@@ -3,6 +3,23 @@
 A web-based inventory management system built with **Laravel** and **PostgreSQL**, designed to track emergency supplies for critical operations. It supports full CRUD functionality, stock status monitoring, soft deletes, search and filtering, and expiration date tracking.
 
 ## 📸 Screenshots
+> DASHBOARD
+<img width="1920" height="1020" alt="Screenshot 2026-03-30 191914" src="https://github.com/user-attachments/assets/dad688a2-3bb2-4f7c-9fbc-676a0ca0d9b2" />
+
+> ADD ITEM
+<img width="1920" height="1020" alt="Screenshot 2026-03-30 191925" src="https://github.com/user-attachments/assets/4c7c1b40-ad33-47d8-b9c2-4f2562c9ee09" />
+
+> EDIT ITEM
+<img width="1920" height="1020" alt="Screenshot 2026-03-30 191937" src="https://github.com/user-attachments/assets/eb1dae0f-c932-433e-a10e-f01d9a588b51" />
+
+> DELETE ITEM
+<img width="1920" height="1020" alt="Screenshot 2026-03-30 191949" src="https://github.com/user-attachments/assets/de00e21c-424a-4b3e-ad60-2cbe067b48e5" />
+
+> SEARCH & FILTERING
+<img width="1920" height="1020" alt="Screenshot 2026-03-30 192016" src="https://github.com/user-attachments/assets/5e273667-2dd2-4e78-9896-60449984358a" />
+
+> CRITICAL STATUS
+<img width="1920" height="1020" alt="Screenshot 2026-03-30 192003" src="https://github.com/user-attachments/assets/d380d511-3764-49a5-81ba-84d4d558276b" />
 
 ## ✅ Features Implemented
 - **Inventory CRUD**: Add items, read, edit item details, and delete items.
@@ -86,3 +103,54 @@ php artisan serve
 Then visit: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 ## 🗂️ MVC Architecture
+This follows Laravel's Model-View-Controller (MVC) architectural pattern, ensuring clean separation of concerns and maintainable code.
+
+### 📋 MVC Overview
+
+**MVC** separates an application into three interconnected components:
+
+- **Model**: Handles data logic and database interactions
+- **View**: Manages the presentation layer (UI/templates)
+- **Controller**: Processes user requests and coordinates between Model and View
+
+### 🗂️ Project Structure
+
+```
+lab2/
+├── app/                          # Application core code
+│   ├── Http/Controllers/         # Controllers (C in MVC)
+│   │   ├── Controller.php        # Base controller class
+│   │   └── InventoryController.php # Main inventory controller
+│   ├── Models/                   # Models (M in MVC)
+│   │   ├── Inventory.php         # Inventory data model
+│   │   └── User.php              # User authentication model
+│   └── Providers/                # Service providers
+│       └── AppServiceProvider.php
+├── resources/views/              # Views (V in MVC)
+│   ├── inventory/                # Inventory-related views
+│   │   ├── index.blade.php       # Main inventory listing
+│   │   ├── create.blade.php      # Add new item form
+│   │   ├── edit.blade.php        # Edit item form
+│   │   ├── show.blade.php        # View single item details
+│   │   └── trashed.blade.php     # Soft-deleted items view
+│   ├── layouts/                  # Layout templates
+│   │   └── app.blade.php         # Main application layout
+│   └── welcome.blade.php         # Landing page
+├── routes/                       # Route definitions
+│   ├── web.php                   # Web routes (browser access)
+│   └── console.php               # Console routes (CLI)
+├── database/                     # Database-related files
+│   ├── migrations/               # Database schema migrations
+│   │   ├── 0001_01_01_000000_create_inventories_table.php
+│   │   ├── 0001_01_01_000001_create_cache_table.php
+│   │   └── 0001_01_01_000002_create_jobs_table.php
+│   ├── factories/                # Model factories for testing
+│   │   └── UserFactory.php
+│   └── seeders/                  # Database seeders
+│       └── DatabaseSeeder.php
+├── config/                       # Configuration files
+├── public/                       # Public assets (CSS, JS, images)
+├── storage/                      # File storage, logs, cache
+├── tests/                        # Test files
+└── vendor/                       # Composer dependencies
+```
