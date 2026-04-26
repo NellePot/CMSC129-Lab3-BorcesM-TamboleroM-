@@ -2,75 +2,101 @@
 
 namespace App\Services;
 
-use App\Models\Inventory;
-use Illuminate\Support\Facades\Http;
+use Gemini\Data\Content;
+use Gemini\Enums\Role;
+use Gemini\Laravel\Facades\Gemini;
+use Illuminate\Support\Facades\Log;
 
-class GeminiService 
+class GeminiService
 {
+    public function __construct(
+        protected PromptService $prompt,
+        protected FunctionCallService $functionCall
+    ) {}
 
     public function ask(string $message, array $history = []): string
     {
         try {
-            $inventory = Inventory::all()->map(function ($item) {
-                return [
-                    'name' => $item->name,
-                    'category' => $item->category,
-                    'quantity' => $item->quantity,
-                    'minimum_stock'   => $item->minimum_stock,
-                    'expiration_date' => $item->expiration_date ?? 'No expiration',
-                    'status' => $item->quantity <= 0 ? 'Out of Stock' 
-                                                    : ($item->is_low_stock ? 'Low Stock' : 'In Stock'),
-                ];
-            });
+             // Handle simple greetings locally
+            $greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
+            $trimmed = strtolower(trim($message));
 
-            $systemPrompt = "You are a helpful inventory assistant for an Emergency Inventory Management System.
-You have access to the current inventory data below. Answer questions accurately based on this data.
-Be concise, friendly, and helpful. If asked something unrelated to inventory, politely redirect the conversation.
+            if (in_array($trimmed, $greetings)) {
+                return "Hello! I'm your inventory assistant. How can I help you?";
+            }
 
-Current Inventory Data:
-" . json_encode($inventory, JSON_PRETTY_PRINT) . "
+            $model = Gemini::generativeModel('gemini-2-flash')
+                ->withSystemInstruction($this->prompt->systemInstruction())
+                ->withTool($this->prompt->getTools());
 
-You can answer questions like:
-- How many items are in stock?
-- Which items are low or out of stock?
-- What items are expiring soon?
-- How many items are in a specific category?
-- What is the total quantity of a specific item?
-- How many critical items are there?";
-
-            // Build conversation history
             $contents = [];
+
             foreach ($history as $msg) {
-                $contents[] = [
-                    'role'  => $msg['role'],
-                    'parts' => [['text' => $msg['text']]],
-                ];
+                $role = $msg['role'] === 'model' ? Role::MODEL : Role::USER;
+                $contents[] = Content::parse($msg['text'], $role);
             }
 
-            // Add current user message
-            $contents[] = [
-                'role'  => 'user',
-                'parts' => [['text' => $message]],
-            ];
+            $contents[] = Content::parse($message, Role::USER);
 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . env('GEMINI_API_KEY'), [
-                'system_instruction' => [
-                    'parts' => [['text' => $systemPrompt]],
-                ],
-                'contents' => $contents,
-            ]);
+            $response = $model->generateContent(...$contents);
 
-            if ($response->failed()) {
-                return 'Sorry, I am unavailable right now. Please try again later.';
+            // Handle function calls (loop to support chained calls)
+            $maxIterations = 5;
+            $i = 0;
+
+            while ($i++ < $maxIterations) {
+                $functionCallPart = null;
+
+                foreach ($response->parts() as $part) {
+                    if ($part->functionCall !== null) {
+                        $functionCallPart = $part->functionCall;
+                        break;
+                    }
+                }
+
+                if ($functionCallPart === null) {
+                    break; // No function call, we have our final response
+                }
+
+                Log::info('Gemini function call', ['name' => $functionCallPart->name, 'args' => $functionCallPart->args]);
+
+                $result = $this->functionCall->execute($functionCallPart);
+
+                // Append the model's function call turn
+                $contents[] = new Content(
+                    parts: $response->parts(),
+                    role: Role::MODEL
+                );
+
+                // Append the model's function call turn
+                $contents[] = new Content(
+                    parts: $response->parts(),
+                    role: Role::MODEL
+                );
+
+                // Append the function response turn — use array format instead of Part::fromFunctionResponse
+                $contents[] = Content::parse(
+                    json_encode([
+                        'functionResponse' => [
+                            'name' => $functionCallPart->name,
+                            'response' => json_decode($result, true),
+                        ]
+                    ]),
+                    Role::USER
+                );
+
+                $response = $model->generateContent(...$contents);
             }
 
-            return $response->json('candidates.0.content.parts.0.text')
-                ?? 'Sorry, I could not generate a response.';
+            return $response->text() ?? "Sorry, I couldn't process that.";
 
         } catch (\Exception $e) {
-            return 'Sorry, something went wrong. Please try again.';
+            Log::error('GeminiService error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return "Sorry, I couldn't process that.";
         }
     }
 }
