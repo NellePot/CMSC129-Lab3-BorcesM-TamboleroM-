@@ -257,4 +257,272 @@
         </div>
     </div>
 </div>
+
+{{-- ===================== FLOATING CHATBOT ===================== --}}
+<div class="floating-chatbot">
+    <button type="button" id="chatbotToggle" class="chatbot-toggle">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+
+    <div id="chatbotBox" class="chatbot-box">
+        <div class="chatbot-header">
+            <div>
+                <h6 class="mb-0 fw-bold">Inventory Assistant</h6>
+                <small>Online</small>
+            </div>
+
+            <button type="button" id="chatbotClose" class="chatbot-close">
+                &times;
+            </button>
+        </div>
+
+        <div class="chatbot-body">
+            <div class="chatbot-message bot">
+                Hello! How can I help you today?
+            </div>
+        </div>
+
+        <div class="chatbot-footer">
+            <input type="text" placeholder="Type a message..." disabled>
+            <button type="button" disabled>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .floating-chatbot {
+        position: fixed;
+        right: 25px;
+        bottom: 25px;
+        z-index: 9999;
+    }
+
+    .chatbot-toggle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: none;
+        background: #0d6efd;
+        color: white;
+        font-size: 24px;
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.4);
+        transition: 0.2s ease;
+    }
+
+    .chatbot-toggle:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 28px rgba(13, 110, 253, 0.6);
+    }
+
+    .chatbot-box {
+        display: none;
+        width: 340px;
+        height: 430px;
+        margin-bottom: 15px;
+        background: #111827;
+        border: 1px solid #374151;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .chatbot-header {
+        background: #1f2937;
+        color: white;
+        padding: 14px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #374151;
+    }
+
+    .chatbot-header small {
+        color: #22c55e;
+        font-size: 12px;
+    }
+
+    .chatbot-close {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 24px;
+        line-height: 1;
+    }
+
+    .chatbot-body {
+        height: 300px;
+        padding: 15px;
+        background: #0f172a;
+        overflow-y: auto;
+    }
+
+    .chatbot-message {
+        max-width: 80%;
+        padding: 10px 12px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .chatbot-message.bot {
+        background: #1f2937;
+        color: #e5e7eb;
+        border-bottom-left-radius: 4px;
+    }
+
+    .chatbot-footer {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        background: #1f2937;
+        border-top: 1px solid #374151;
+    }
+
+    .chatbot-footer input {
+        flex: 1;
+        border: 1px solid #374151;
+        border-radius: 999px;
+        padding: 9px 14px;
+        background: #111827;
+        color: white;
+        outline: none;
+    }
+
+    .chatbot-footer input::placeholder {
+        color: #9ca3af;
+    }
+
+    .chatbot-footer button {
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 50%;
+        background: #0d6efd;
+        color: white;
+    }
+
+    .chatbot-footer input:disabled,
+    .chatbot-footer button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+</style>
+
+<script>
+    let chatHistory = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const input   = document.querySelector('.chatbot-footer input');
+        const sendBtn = document.querySelector('.chatbot-footer button');
+        const toggle  = document.getElementById('chatbotToggle');
+        const box     = document.getElementById('chatbotBox');
+        const close   = document.getElementById('chatbotClose');
+
+        // Enable input and button
+        input.disabled   = false;
+        sendBtn.disabled = false;
+
+        // Toggle open/close
+        toggle.addEventListener('click', function () {
+            box.style.display = box.style.display === 'block' ? 'none' : 'block';
+            if (box.style.display === 'block') input.focus();
+        });
+
+        close.addEventListener('click', function () {
+            box.style.display = 'none';
+        });
+
+        // Send on button click or Enter key
+        sendBtn.addEventListener('click', sendMessage);
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    });
+
+    function appendMessage(text, role) {
+        const body = document.querySelector('.chatbot-body');
+        const div  = document.createElement('div');
+
+        div.classList.add('chatbot-message', role === 'user' ? 'user' : 'bot');
+        div.style.marginBottom = '10px';
+        div.style.whiteSpace   = 'pre-wrap';
+
+        if (role === 'user') {
+            div.style.marginLeft              = 'auto';
+            div.style.background              = '#1d4ed8';
+            div.style.color                   = 'white';
+            div.style.borderBottomRightRadius = '4px';
+        }
+
+        div.textContent = text;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    function setLoading(isLoading) {
+        const input   = document.querySelector('.chatbot-footer input');
+        const sendBtn = document.querySelector('.chatbot-footer button');
+        input.disabled   = isLoading;
+        sendBtn.disabled = isLoading;
+        sendBtn.innerHTML = isLoading
+            ? '<i class="fas fa-circle-notch fa-spin"></i>'
+            : '<i class="fas fa-paper-plane"></i>';
+    }
+
+    async function sendMessage() {
+        const input   = document.querySelector('.chatbot-footer input');
+        const message = input.value.trim();
+        if (!message) return;
+
+        input.value = '';
+        appendMessage(message, 'user');
+        setLoading(true);
+
+        // Typing indicator
+        const body   = document.querySelector('.chatbot-body');
+        const typing = document.createElement('div');
+        typing.id    = 'typingIndicator';
+        typing.classList.add('chatbot-message', 'bot');
+        typing.style.marginBottom = '10px';
+        typing.style.color        = '#9ca3af';
+        typing.innerHTML          = '<i class="fas fa-circle-notch fa-spin me-1"></i> Thinking...';
+        body.appendChild(typing);
+        body.scrollTop = body.scrollHeight;
+
+        try {
+            const response = await fetch('{{ route("chat") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({ message, history: chatHistory }),
+            });
+
+            const data = await response.json();
+            document.getElementById('typingIndicator')?.remove();
+
+            if (data.error) {
+                appendMessage('⚠️ ' + data.error, 'bot');
+            } else {
+                appendMessage(data.reply, 'bot');
+                // Save to history for context
+                chatHistory.push({ role: 'user',  text: message });
+                chatHistory.push({ role: 'model', text: data.reply });
+                // Keep only last 10 entries (5 exchanges)
+                if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+            }
+        } catch (e) {
+            document.getElementById('typingIndicator')?.remove();
+            appendMessage('⚠️ Something went wrong. Please try again.', 'bot');
+        } finally {
+            setLoading(false);
+            document.querySelector('.chatbot-footer input').focus();
+        }
+    }
+</script>
+{{-- ================================================================ --}}
+
 @endsection

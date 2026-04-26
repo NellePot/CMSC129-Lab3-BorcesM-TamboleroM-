@@ -11,4 +11,6 @@ Route::patch('inventory/{id}/restore', [InventoryController::class, 'restore'])-
 Route::delete('inventory/{id}/force-delete', [InventoryController::class, 'forceDelete'])->name('inventory.forceDelete');
 Route::get('inventory/critical', [InventoryController::class, 'critical'])->name('inventory.critical');
 
+Route::post('/chatbot', [ChatBotController::class, 'sendMessage'])->name('chat');
+
 Route::resource('inventory', InventoryController::class);
