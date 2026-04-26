@@ -40,6 +40,14 @@ class FunctionCallService
                     ? $this->inventory->getCategoryCount($args['category'])
                     : ['error' => 'Category name is required.'],
 
+            'get_item_expiry_status' =>
+                !empty($args['item_name'])
+                    ? $this->inventory->getItemExpiryStatus($args['item_name'])
+                    : ['error' => 'Item name is required to check expiry status.'],
+
+            'get_expired_items' =>
+                $this->inventory->getExpiredItems(),
+
             default => ['error' => "Unknown function: {$name}"],
         };
 

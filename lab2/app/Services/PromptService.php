@@ -25,7 +25,8 @@ class PromptService
         - Overall stock summaries (total items, quantities, out-of-stock counts)
         - Low stock and critical items that need restocking
         - Items expiring soon (within a configurable number of days)
-        - Inventory breakdown by category
+        - Items that have already expired
+        - Inventory breakdown by category, including listing all items in a specific category
         - Specific item quantities by name
 
         Keep responses clear, concise, and user-friendly.
@@ -80,18 +81,39 @@ class PromptService
             ),
 
             new FunctionDeclaration(
+                name: 'get_item_expiry_status',
+                description: 'Returns the expiry status of a specific inventory item. Use when the user asks if a specific item is near expiry, expired, or safe.',
+                parameters: new Schema(
+                    type: DataType::OBJECT,
+                    properties: [
+                        'item_name' => new Schema(
+                            type: DataType::STRING,
+                            description: 'The name or partial name of the inventory item to check expiry status for'
+                        ),
+                    ],
+                    required: ['item_name']
+                )
+            ),
+
+            new FunctionDeclaration(
                 name: 'get_category_count',
-                description: 'Returns item count, total quantity, and low stock count for a specific inventory category. Use when the user asks about a specific product category.',
+                description: 'Returns all items in a specific category, including their quantities, expiration dates, and low stock status. Also returns the count of items, total quantity, and low stock count for the category. Use when the user asks about a specific category, wants to see items in a category, or asks what is in stock for a category.',
                 parameters: new Schema(
                     type: DataType::OBJECT,
                     properties: [
                         'category' => new Schema(
                             type: DataType::STRING,
-                            description: 'The category name to look up'
+                            description: 'The name or partial name of the category to look up'
                         ),
                     ],
                     required: ['category']
                 )
+            ),
+
+            new FunctionDeclaration(
+                name: 'get_expired_items',
+                description: 'Returns items that have already expired (past their expiration date). Use when the user asks about expired items, items that are past expiration, or what needs to be discarded.',
+                parameters: new Schema(type: DataType::OBJECT)
             ),
 
         ]);

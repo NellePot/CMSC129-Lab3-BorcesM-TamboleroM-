@@ -25,7 +25,9 @@ class GeminiService
                 return "Hello! I'm your inventory assistant. How can I help you?";
             }
 
-            $model = Gemini::generativeModel('gemini-2-flash')
+            $client = \Gemini::client(config('gemini.api_key') ?? env('GEMINI_API_KEY'));
+
+            $model = $client->generativeModel(model: 'gemini-2.5-flash')
                 ->withSystemInstruction($this->prompt->systemInstruction())
                 ->withTool($this->prompt->getTools());
 
