@@ -154,3 +154,40 @@ lab2/
 ├── tests/                        # Test files
 └── vendor/                       # Composer dependencies
 ```
+## AI Features and Description 
+**AI Chatbot (Inquiry Mode)** - Answers questions about the inventory. Supports stock summaries, low stock alerts, expiring/expired item lookups, item quantity checks, and category breakdowns. 
+
+**AI Assistant (CRUD Mode)** - Performs inventory operations. Supports adding, updating, and deleting inventory items via chat.  
+
+## AI Model Used 
+
+Google Gemini API 
+
+## Setup Instructions 
+
+## Environment Variables Needed 
+```
+APP_NAME=
+APP_ENV=
+APP_KEY=
+APP_DEBUG=true
+APP_URL=
+
+DB_CONNECTION=
+DB_HOST=
+DB_PORT=
+DB_DATABASE=
+DB_USERNAME=
+DB_PASSWORD=
+
+GEMINI_API_KEY=
+```
+## Example queries users can try 
+**AI Chatbot (Inquiry Mode)** 
+> "Stock Summary"
+
+> "What item is about to expire?"
+
+> "What item is out of stock?"
+
+
