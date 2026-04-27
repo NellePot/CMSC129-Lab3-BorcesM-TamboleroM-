@@ -2,6 +2,7 @@
 use App\Http\Controllers\InventoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatBotController;
+use App\Http\Controllers\AIAssistantController;
 
 Route::get('/', function () {
     return redirect()->route('inventory.index');

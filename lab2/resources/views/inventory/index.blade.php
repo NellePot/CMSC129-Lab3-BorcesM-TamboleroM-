@@ -50,7 +50,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="modal fade" id="criticalModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content" style="background-color:#1f2937; border:1px solid #374151;">
@@ -584,6 +584,19 @@
                 chatHistory.push({ role: 'user',  text: message });
                 chatHistory.push({ role: 'model', text: data.reply });
                 if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+                 if (currentMode === 'assistant') {
+                    const reply = data.reply.toLowerCase();
+                    const crudSuccess = [
+                        'successfully added', 'successfully updated', 'successfully deleted',
+                        'has been added', 'has been updated', 'has been deleted',
+                        'created', 'removed from inventory'
+                    ];
+
+                    if (crudSuccess.some(phrase => reply.includes(phrase))) {
+                        setTimeout(() => location.reload(), 800);
+                    }
+                }
             }
         } catch (e) {
             document.getElementById('typingIndicator')?.remove();
