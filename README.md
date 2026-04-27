@@ -161,9 +161,33 @@ lab2/
 
 ## AI Model Used 
 
-Google Gemini API 
+AI: Google Gemini API 
+Model: gemini-2.5-flash 
 
 ## Setup Instructions 
+**1. Get your Gemini API Key**
+1. Go to Google AI Studio
+2. Sign in with your Google account
+3. Navigate to "Get API Key"
+4. Click Create API Key
+5. Copy the generated key
+
+**2. Store API Key in .env**
+Add your API key to your .env file: 
+```
+GEMINI_API_KEY= your_api_key_here
+```
+**3. Install Gemini PHP SDK**
+If not installed yet: 
+```
+composer require google-gemini-php/laravel
+```
+**4. Clear Config Cache**
+After setting .env: 
+```
+php artisan config:clear
+php artisan cache:clear
+```
 
 ## Environment Variables Needed 
 ```
@@ -189,5 +213,25 @@ GEMINI_API_KEY=
 > "What item is about to expire?"
 
 > "What item is out of stock?"
+
+> "How many items are in Medicine?"
+
+> "What is the quantity of Paracetamol?"
+
+**AI Assistant (CRUD Mode)**
+> "update cetirizine quantity to 10"
+
+> "delete paracetamol"
+
+> "add bandages with quantity 20"
+
+> "update paracetamol expiration to May 10,2026"
+
+> "update neozep category to medicine"
+
+## Screenshots of Chatbot Interactions
+
+
+
 
 
