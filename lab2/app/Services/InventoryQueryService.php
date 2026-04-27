@@ -11,8 +11,17 @@ class InventoryQueryService
         $totalItems = Inventory::count();
         $totalQuantity = Inventory::sum('quantity');
         $outOfStock = Inventory::where('quantity', '<=', 0)->count();
-        $lowStock = Inventory::whereColumn('quantity', '<=', 'minimum_stock')->where('quantity', '>', 0)->count();
-        $inStock = Inventory::where('quantity', '>', 0)->whereColumn('quantity', '>', 'minimum_stock')->count();
+        $lowStock = Inventory::whereColumn('quantity', '<=', 'minimum_stock')
+            ->where('quantity', '>', 0)
+            ->count();
+        $inStock = Inventory::where('quantity', '>', 0)
+            ->whereColumn('quantity', '>', 'minimum_stock')
+            ->count();
+
+        $items = Inventory::orderBy('name')
+            ->limit(10)
+            ->get(['name', 'quantity', 'category'])
+            ->toArray();
 
         return [
             'totalItems' => $totalItems,
@@ -20,6 +29,7 @@ class InventoryQueryService
             'outOfStock' => $outOfStock,
             'lowStock' => $lowStock,
             'inStock' => $inStock,
+            'items' => $items, // 👈 NEW
         ];
     }
 
@@ -56,7 +66,7 @@ class InventoryQueryService
     {
         $items = Inventory::whereNotNull('expiration_date')
             ->whereDate('expiration_date', '<=', now()->addDays($days))
-            ->whereDate('expiration_date', '>=', now())
+            //->whereDate('expiration_date', '>=', now())
             ->orderBy('expiration_date', 'asc')
             ->limit(10)
             ->get(['name', 'category', 'quantity', 'expiration_date']);
@@ -90,6 +100,9 @@ class InventoryQueryService
 
     public function createItem(array $data): array
     {
+    if (empty($data['name']) || !isset($data['quantity'])) {
+        return ['success' => false, 'error' => 'Name and quantity are required.'];
+    }
         try {
             $item = Inventory::create([
                 'name' => $data['name'],

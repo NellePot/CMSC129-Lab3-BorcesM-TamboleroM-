@@ -13,28 +13,33 @@ class PromptService
     public function systemInstruction(): Content
     {
         return Content::parse("
-        Your job is to help users by answering questions about inventory data.
+    You are an inventory assistant that helps users understand and manage inventory data.
 
-        IMPORTANT RULES:
-        - ALWAYS use the provided functions when the question involves inventory data.
-        - DO NOT guess or fabricate inventory values.
-        - If the question is unclear, ask for clarification.
-        - If no function applies, respond conversationally.
+    IMPORTANT RULES:
+    - ALWAYS use the provided functions when inventory data is needed.
+    - NEVER guess or fabricate data.
+    - If unclear, ask for clarification.
 
-        You can handle:
-        - Overall stock summaries (total items, quantities, out-of-stock counts)
-        - Low stock and critical items that need restocking
-        - Items expiring soon (within a configurable number of days)
-        - Inventory breakdown by category
-        - Specific item quantities by name
+    RESPONSE STYLE RULES:
+    - ALWAYS include item names when available (do NOT only show counts).
+    - When returning summaries, include BOTH:
+    (1) summary statistics
+    (2) relevant item-level details (name, quantity, category, or expiration date)
+    - Format lists clearly using bullet points.
+    - Keep responses short but informative.
 
-        Keep responses clear, concise, and user-friendly.
-        When presenting lists, format them in a readable way.
-        If a function returns an error, explain it clearly to the user.
-        ");
+    WHEN TO SHOW DETAILS:
+    - Stock summary → include sample item list (top 5–10 items)
+    - Low stock → show item name + quantity + minimum stock
+    - Expiring items → show name + quantity + expiration date
+    - Category → show item names inside that category
+    - Item quantity → show exact item info
+
+    If function returns data, prioritize clarity over brevity.
+    ");
     }
 
-    //instructions for CRUD operations for AI assistant 
+    //instructions for CRUD operations for AI assistant
     public function assistantSystemInstruction(): Content
     {
         return Content::parse("
@@ -65,14 +70,14 @@ class PromptService
         ");
     }
 
-    //for inquiry only 
+    //for inquiry only
     public function getTools(): Tool
     {
         return new Tool(functionDeclarations: [
 
             new FunctionDeclaration(
                 name: 'get_stock_summary',
-                description: 'Returns overall inventory statistics including total items, total quantity, out-of-stock count, and low stock count. Use when the user asks for an inventory overview or summary.',
+                description: 'Returns inventory statistics including total items, total quantity, out-of-stock count, low stock count, AND sample list of item names with quantities for better user visibility.',
                 parameters: new Schema(type: DataType::OBJECT)
             ),
 

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Gemini\Data\Blob;
 use Gemini\Data\Content;
 use Gemini\Data\Part;
 use Gemini\Enums\Role;
@@ -19,24 +18,44 @@ class GeminiService
     public function ask(string $message, array $history = [], bool $isAssistant = false): string
     {
         try {
-             // Handle simple greetings locally — no API call needed
-            $greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
-            $trimmed = strtolower(trim($message));
+            // Handle simple queries locally — no API call needed
+            $localResponses = [
+                'hi'               => "Hello! I'm your inventory assistant. How can I help you?",
+                'hello'            => "Hello! I'm your inventory assistant. How can I help you?",
+                'hey'              => "Hello! I'm your inventory assistant. How can I help you?",
+                'good morning'     => "Good morning! How can I help you with your inventory today?",
+                'good afternoon'   => "Good afternoon! How can I help you with your inventory today?",
+                'good evening'     => "Good evening! How can I help you with your inventory today?",
+                'what can you do'  => "I can check stock levels, expiring items, and inventory summaries!",
+            ];
 
-            if (in_array($trimmed, $greetings)) {
-                return "Hello! I'm your inventory assistant. How can I help you?";
+            $trimmed = strtolower(trim($message));
+            if (isset($localResponses[$trimmed])) {
+                return $localResponses[$trimmed];
             }
 
-            $systemInstruction = $isAssistant ? $this->prompt->assistantSystemInstruction() 
-                                              : $this->prompt->systemInstruction();
+            // Cache repeated identical queries for 5 minutes
+            $cacheKey = 'gemini_' . md5($message . ($isAssistant ? '_assistant' : '_user'));
+            if (cache()->has($cacheKey)) {
+                Log::info('Gemini cache hit', ['message' => $message]);
+                return cache()->get($cacheKey);
+            }
 
-            $tools = $isAssistant ? $this->prompt->getAssistantTools() 
-                                  : $this->prompt->getTools();
+            $systemInstruction = $isAssistant
+                ? $this->prompt->assistantSystemInstruction()
+                : $this->prompt->systemInstruction();
 
-            $model = Gemini::generativeModel('gemini-2.0-flash')
+            $tools = $isAssistant
+                ? $this->prompt->getAssistantTools()
+                : $this->prompt->getTools();
+
+            $modelName = config('gemini.model', 'models/gemini-2.5-flash');
+            $model = Gemini::generativeModel($modelName)
                 ->withSystemInstruction($systemInstruction)
                 ->withTool($tools);
 
+            // Build contents once — this is reused across loop iterations
+            // so history is NOT resent on every function call cycle
             $contents = [];
 
             foreach ($history as $msg) {
@@ -46,10 +65,12 @@ class GeminiService
 
             $contents[] = Content::parse($message, Role::USER);
 
+            // First API call
             $response = $model->generateContent(...$contents);
 
-            // Handle function calls (loop to support chained calls)
-            $maxIterations = 5;
+            // Handle function calls — reduced to 2 iterations max
+            // (chained calls beyond 2 are rare and waste quota)
+            $maxIterations = 2;
             $i = 0;
 
             while ($i++ < $maxIterations) {
@@ -63,40 +84,58 @@ class GeminiService
                 }
 
                 if ($functionCallPart === null) {
-                    break; // No function call, we have our final response
+                    break; // No function call — we have our final text response
                 }
 
-                Log::info('Gemini function call', ['name' => $functionCallPart->name, 'args' => $functionCallPart->args]);
+                Log::info('Executing function call', [
+                    'name' => $functionCallPart->name,
+                    'args' => $functionCallPart->args,
+                ]);
 
                 $result = $this->functionCall->execute($functionCallPart);
 
-                // Append the model's function call turn
+                // Append model's function call turn to existing $contents
+                // (no re-sending history — $contents already has it)
                 $contents[] = new Content(
                     parts: $response->parts(),
                     role: Role::MODEL
                 );
 
-                // Append the function response turn — use array format instead of Part::fromFunctionResponse
-                $contents[] = Content::parse(
-                    json_encode([
-                        'functionResponse' => [
-                            'name' => $functionCallPart->name,
-                            'response' => json_decode($result, true),
-                        ]
-                    ]),
-                    Role::USER
+                // Append function result using proper Part::fromFunctionResponse
+                // This is the correct format Gemini expects for function responses
+                $contents[] = new Content(
+                    parts: [
+                        new Part(
+                            functionResponse: new \Gemini\Data\FunctionResponse(
+                                name: $functionCallPart->name,
+                                response: json_decode($result, true) ?? []
+                            )
+                        )
+                    ],
+                    role: Role::USER
                 );
 
+                // Next API call — only sends $contents (history not duplicated)
                 $response = $model->generateContent(...$contents);
             }
 
-            return $response->text() ?? "Sorry, I couldn't process that.";
+            $finalResponse = $response->text() ?? "Sorry, I couldn't process that.";
+
+            // Cache the final response
+            cache()->put($cacheKey, $finalResponse, now()->addMinutes(5));
+
+            return $finalResponse;
 
         } catch (\Exception $e) {
             Log::error('GeminiService error', [
                 'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'trace'   => $e->getTraceAsString(),
             ]);
+
+            // More helpful error message for overload vs real errors
+            if (str_contains($e->getMessage(), 'high demand')) {
+                return "Gemini is currently busy. Please try again in a few seconds.";
+            }
 
             return "Sorry, I couldn't process that.";
         }
