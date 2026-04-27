@@ -227,9 +227,37 @@ GEMINI_API_KEY=
 
 > "update paracetamol expiration to May 10,2026"
 
-> "update neozep category to medicine"
+> "update neozep category to food"
 
 ## Screenshots of Chatbot Interactions
+
+>UPDATES:
+<img width="1918" height="1079" alt="Screenshot 2026-04-27 235641" src="https://github.com/user-attachments/assets/070d5088-8dec-4958-bd2c-1d7aaddc4003" />
+<img width="1919" height="1079" alt="Screenshot 2026-04-27 235648" src="https://github.com/user-attachments/assets/56dab792-fa56-49ca-8a9d-1ef083804534" />
+<img width="1919" height="1079" alt="Screenshot 2026-04-27 235656" src="https://github.com/user-attachments/assets/79db0011-cde9-4e6a-9dae-e4f94ec948a6" />
+
+>ADDING:
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/883b0977-2cf1-4035-a285-948a8ce8a1f5" />
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/a0e8e8bc-d91e-494f-8dbf-b14464e65fff" />
+
+>INQUIRIES:
+<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/1ef61cbe-fdbb-406a-bf88-030af443e239" />
+<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/57968bfb-a4c7-4596-b0ab-b0869dbcd7b7" />
+<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/c111a9d2-d36b-4adb-828b-67d790812498" />
+<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/5ddf281b-2c4b-4588-87ed-c178f523dc37" />
+<img width="1920" height="1020" alt="image" src="https://github.com/user-attachments/assets/5b753549-6630-4b3c-ba54-2f23608be133" />
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
