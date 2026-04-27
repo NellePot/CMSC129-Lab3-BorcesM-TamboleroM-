@@ -16,5 +16,8 @@ Route::get('inventory/critical', [InventoryController::class, 'critical'])->name
 
 Route::resource('inventory', InventoryController::class);
 Route::post('/assistant', [AIAssistantController::class, 'sendMessage'])->name('assistant');
+Route::get('/assistant/history', [AIAssistantController::class, 'getHistory'])->name('assistant.history');
 
 Route::post('/chatbot', [ChatBotController::class, 'sendMessage'])->name('chat');
+Route::get('/chatbot/history', [ChatBotController::class, 'getHistory'])->name('chatbot.history');
+Route::post('/chatbot/clear-history', [ChatBotController::class, 'clearHistory'])->name('chatbot.clear-history');

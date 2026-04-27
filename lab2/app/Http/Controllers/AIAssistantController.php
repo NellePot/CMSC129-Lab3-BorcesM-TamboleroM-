@@ -36,4 +36,10 @@ class AIAssistantController extends Controller
 
         return response()->json(['reply' => $reply]);
     }
+
+    public function getHistory()
+    {
+        $history = session()->get('assistant_history', []);
+        return response()->json(['history' => $history]);
+    }
 }

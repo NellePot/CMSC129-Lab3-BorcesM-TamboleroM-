@@ -35,4 +35,19 @@ class ChatBotController extends Controller
 
         return response()->json(['reply' => $reply]);
     }
+
+    public function getHistory()
+    {
+        $history = session()->get('chat_history', []);
+        return response()->json(['history' => $history]);
+    }
+
+    public function clearHistory()
+    {
+        session()->forget('chat_history');
+
+        return response()->json([
+            'message' => 'Chat history cleared'
+        ]);
+    }
 }

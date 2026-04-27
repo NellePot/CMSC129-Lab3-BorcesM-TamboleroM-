@@ -457,13 +457,36 @@
     const routes = {
         inquiry:   '{{ route("chat") }}',
         assistant: '{{ route("assistant") }}',
+        history: {
+            inquiry:   '{{ route("chatbot.history") }}',
+            assistant: '{{ route("assistant.history") }}',
+        }
     };
 
     const welcomeMessages = {
         inquiry:   '👋 Switched to <strong>Inquiry Mode</strong>. Ask me anything about your inventory!',
         assistant: '🤖 Switched to <strong>Assistant Mode</strong>. I can add, update, or delete items for you!',
     };
-
+    async function loadHistory(mode) {
+        try {
+            const response = await fetch(routes.history[mode]);
+            const data = await response.json();
+            const body = document.getElementById('chatbotBody');
+            body.innerHTML = '';
+            if (data.history.length === 0) {
+                const div = document.createElement('div');
+                div.classList.add('chatbot-message', 'bot');
+                div.innerHTML = welcomeMessages[mode];
+                body.appendChild(div);
+            } else {
+                data.history.forEach(msg => {
+                    appendMessage(msg.text, msg.role === 'user' ? 'user' : 'bot');
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load history:', e);
+        }
+    }
     document.addEventListener('DOMContentLoaded', function () {
         const toggle  = document.getElementById('chatbotToggle');
         const box     = document.getElementById('chatbotBox');
@@ -484,11 +507,13 @@
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') sendMessage();
         });
+
+        // Load initial history
+        loadHistory(currentMode);
     });
 
     function switchMode(mode) {
         currentMode = mode;
-        chatHistory = []; // reset history on mode switch
 
         // Update tab styles
         document.getElementById('btnInquiry').style.background   = mode === 'inquiry'   ? '#3b82f6' : '#0f172a';
@@ -500,13 +525,8 @@
         document.getElementById('chatbotSubtitle').textContent = mode === 'inquiry' ? 'Inquiry Mode' : 'Assistant Mode (CRUD)';
         document.getElementById('chatbotSubtitle').style.color = mode === 'inquiry' ? '#22c55e' : '#a78bfa';
 
-        // Clear chat and show welcome message
-        const body = document.getElementById('chatbotBody');
-        body.innerHTML = '';
-        const div = document.createElement('div');
-        div.classList.add('chatbot-message', 'bot');
-        div.innerHTML = welcomeMessages[mode];
-        body.appendChild(div);
+        // Load history for the mode
+        loadHistory(mode);
 
         // Update placeholder
         document.getElementById('chatbotInput').placeholder = mode === 'inquiry'
