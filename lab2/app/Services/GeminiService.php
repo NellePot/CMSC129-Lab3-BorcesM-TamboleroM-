@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use Gemini\Data\Blob;
 use Gemini\Data\Content;
+use Gemini\Data\Part;
 use Gemini\Enums\Role;
 use Gemini\Laravel\Facades\Gemini;
 use Illuminate\Support\Facades\Log;
@@ -14,10 +16,10 @@ class GeminiService
         protected FunctionCallService $functionCall
     ) {}
 
-    public function ask(string $message, array $history = []): string
+    public function ask(string $message, array $history = [], bool $isAssistant = false): string
     {
         try {
-             // Handle simple greetings locally
+             // Handle simple greetings locally — no API call needed
             $greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
             $trimmed = strtolower(trim($message));
 
@@ -25,11 +27,15 @@ class GeminiService
                 return "Hello! I'm your inventory assistant. How can I help you?";
             }
 
-            $client = \Gemini::client(config('gemini.api_key') ?? env('GEMINI_API_KEY'));
+            $systemInstruction = $isAssistant ? $this->prompt->assistantSystemInstruction() 
+                                              : $this->prompt->systemInstruction();
 
-            $model = $client->generativeModel(model: 'gemini-2.5-flash')
-                ->withSystemInstruction($this->prompt->systemInstruction())
-                ->withTool($this->prompt->getTools());
+            $tools = $isAssistant ? $this->prompt->getAssistantTools() 
+                                  : $this->prompt->getTools();
+
+            $model = Gemini::generativeModel('gemini-2.0-flash')
+                ->withSystemInstruction($systemInstruction)
+                ->withTool($tools);
 
             $contents = [];
 
@@ -63,12 +69,6 @@ class GeminiService
                 Log::info('Gemini function call', ['name' => $functionCallPart->name, 'args' => $functionCallPart->args]);
 
                 $result = $this->functionCall->execute($functionCallPart);
-
-                // Append the model's function call turn
-                $contents[] = new Content(
-                    parts: $response->parts(),
-                    role: Role::MODEL
-                );
 
                 // Append the model's function call turn
                 $contents[] = new Content(

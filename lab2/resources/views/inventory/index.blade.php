@@ -267,24 +267,35 @@
     <div id="chatbotBox" class="chatbot-box">
         <div class="chatbot-header">
             <div>
-                <h6 class="mb-0 fw-bold">Inventory Assistant</h6>
-                <small>Online</small>
+                <h6 class="mb-0 fw-bold" id="chatbotTitle">Inventory Assistant</h6>
+                <small id="chatbotSubtitle" style="color:#22c55e;">Inquiry Mode</small>
             </div>
+            <button type="button" id="chatbotClose" class="chatbot-close">&times;</button>
+        </div>
 
-            <button type="button" id="chatbotClose" class="chatbot-close">
-                &times;
+        {{-- Mode Toggle --}}
+        <div style="display:flex; background:#0f172a; border-bottom:1px solid #374151;">
+            <button id="btnInquiry" onclick="switchMode('inquiry')"
+                style="flex:1; padding:8px; border:none; font-size:12px; font-weight:600;
+                       background:#3b82f6; color:white; cursor:pointer; transition:0.2s;">
+                <i class="fas fa-search me-1"></i> Inquiry
+            </button>
+            <button id="btnAssistant" onclick="switchMode('assistant')"
+                style="flex:1; padding:8px; border:none; font-size:12px; font-weight:600;
+                       background:#0f172a; color:#9ca3af; cursor:pointer; transition:0.2s;">
+                <i class="fas fa-robot me-1"></i> Assistant (CRUD)
             </button>
         </div>
 
-        <div class="chatbot-body">
+        <div class="chatbot-body" id="chatbotBody">
             <div class="chatbot-message bot">
-                Hello! How can I help you today?
+                👋 Hello! I'm in <strong>Inquiry Mode</strong>. Ask me anything about your inventory!
             </div>
         </div>
 
         <div class="chatbot-footer">
-            <input type="text" placeholder="Type a message..." disabled>
-            <button type="button" disabled>
+            <input type="text" id="chatbotInput" placeholder="Ask about inventory...">
+            <button type="button" id="chatbotSend">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
@@ -343,6 +354,35 @@
         font-size: 12px;
     }
 
+    .chatbot-mode-switch {
+        display: flex;
+        gap: 8px;
+        padding: 10px;
+        background: #111827;
+        border-bottom: 1px solid #374151;
+    }
+
+    .mode-btn {
+        flex: 1;
+        border: 1px solid #374151;
+        background: #1f2937;
+        color: #9ca3af;
+        border-radius: 999px;
+        padding: 7px 10px;
+        font-size: 13px;
+        transition: 0.2s ease;
+    }
+
+    .mode-btn.active {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+
+    .mode-btn:hover {
+        color: white;
+    }
+
     .chatbot-close {
         background: transparent;
         border: none;
@@ -352,7 +392,7 @@
     }
 
     .chatbot-body {
-        height: 300px;
+        height: 250px;
         padding: 15px;
         background: #0f172a;
         overflow-y: auto;
@@ -412,19 +452,25 @@
 
 <script>
     let chatHistory = [];
+    let currentMode = 'inquiry'; // 'inquiry' or 'assistant'
+
+    const routes = {
+        inquiry:   '{{ route("chat") }}',
+        assistant: '{{ route("assistant") }}',
+    };
+
+    const welcomeMessages = {
+        inquiry:   '👋 Switched to <strong>Inquiry Mode</strong>. Ask me anything about your inventory!',
+        assistant: '🤖 Switched to <strong>Assistant Mode</strong>. I can add, update, or delete items for you!',
+    };
 
     document.addEventListener('DOMContentLoaded', function () {
-        const input   = document.querySelector('.chatbot-footer input');
-        const sendBtn = document.querySelector('.chatbot-footer button');
         const toggle  = document.getElementById('chatbotToggle');
         const box     = document.getElementById('chatbotBox');
         const close   = document.getElementById('chatbotClose');
+        const input   = document.getElementById('chatbotInput');
+        const sendBtn = document.getElementById('chatbotSend');
 
-        // Enable input and button
-        input.disabled   = false;
-        sendBtn.disabled = false;
-
-        // Toggle open/close
         toggle.addEventListener('click', function () {
             box.style.display = box.style.display === 'block' ? 'none' : 'block';
             if (box.style.display === 'block') input.focus();
@@ -434,15 +480,42 @@
             box.style.display = 'none';
         });
 
-        // Send on button click or Enter key
         sendBtn.addEventListener('click', sendMessage);
         input.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') sendMessage();
         });
     });
 
+    function switchMode(mode) {
+        currentMode = mode;
+        chatHistory = []; // reset history on mode switch
+
+        // Update tab styles
+        document.getElementById('btnInquiry').style.background   = mode === 'inquiry'   ? '#3b82f6' : '#0f172a';
+        document.getElementById('btnInquiry').style.color        = mode === 'inquiry'   ? 'white'   : '#9ca3af';
+        document.getElementById('btnAssistant').style.background = mode === 'assistant' ? '#7c3aed' : '#0f172a';
+        document.getElementById('btnAssistant').style.color      = mode === 'assistant' ? 'white'   : '#9ca3af';
+
+        // Update subtitle
+        document.getElementById('chatbotSubtitle').textContent = mode === 'inquiry' ? 'Inquiry Mode' : 'Assistant Mode (CRUD)';
+        document.getElementById('chatbotSubtitle').style.color = mode === 'inquiry' ? '#22c55e' : '#a78bfa';
+
+        // Clear chat and show welcome message
+        const body = document.getElementById('chatbotBody');
+        body.innerHTML = '';
+        const div = document.createElement('div');
+        div.classList.add('chatbot-message', 'bot');
+        div.innerHTML = welcomeMessages[mode];
+        body.appendChild(div);
+
+        // Update placeholder
+        document.getElementById('chatbotInput').placeholder = mode === 'inquiry'
+            ? 'Ask about inventory...'
+            : 'e.g. Add 50 bandages to Medical...';
+    }
+
     function appendMessage(text, role) {
-        const body = document.querySelector('.chatbot-body');
+        const body = document.getElementById('chatbotBody');
         const div  = document.createElement('div');
 
         div.classList.add('chatbot-message', role === 'user' ? 'user' : 'bot');
@@ -451,7 +524,7 @@
 
         if (role === 'user') {
             div.style.marginLeft              = 'auto';
-            div.style.background              = '#1d4ed8';
+            div.style.background              = currentMode === 'assistant' ? '#7c3aed' : '#1d4ed8';
             div.style.color                   = 'white';
             div.style.borderBottomRightRadius = '4px';
         }
@@ -462,8 +535,8 @@
     }
 
     function setLoading(isLoading) {
-        const input   = document.querySelector('.chatbot-footer input');
-        const sendBtn = document.querySelector('.chatbot-footer button');
+        const input   = document.getElementById('chatbotInput');
+        const sendBtn = document.getElementById('chatbotSend');
         input.disabled   = isLoading;
         sendBtn.disabled = isLoading;
         sendBtn.innerHTML = isLoading
@@ -472,7 +545,7 @@
     }
 
     async function sendMessage() {
-        const input   = document.querySelector('.chatbot-footer input');
+        const input   = document.getElementById('chatbotInput');
         const message = input.value.trim();
         if (!message) return;
 
@@ -481,7 +554,7 @@
         setLoading(true);
 
         // Typing indicator
-        const body   = document.querySelector('.chatbot-body');
+        const body   = document.getElementById('chatbotBody');
         const typing = document.createElement('div');
         typing.id    = 'typingIndicator';
         typing.classList.add('chatbot-message', 'bot');
@@ -492,7 +565,7 @@
         body.scrollTop = body.scrollHeight;
 
         try {
-            const response = await fetch('{{ route("chat") }}', {
+            const response = await fetch(routes[currentMode], {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -508,10 +581,8 @@
                 appendMessage('⚠️ ' + data.error, 'bot');
             } else {
                 appendMessage(data.reply, 'bot');
-                // Save to history for context
                 chatHistory.push({ role: 'user',  text: message });
                 chatHistory.push({ role: 'model', text: data.reply });
-                // Keep only last 10 entries (5 exchanges)
                 if (chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
             }
         } catch (e) {
@@ -519,7 +590,7 @@
             appendMessage('⚠️ Something went wrong. Please try again.', 'bot');
         } finally {
             setLoading(false);
-            document.querySelector('.chatbot-footer input').focus();
+            document.getElementById('chatbotInput').focus();
         }
     }
 </script>

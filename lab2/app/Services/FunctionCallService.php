@@ -39,14 +39,24 @@ class FunctionCallService
                 !empty($args['category'])
                     ? $this->inventory->getCategoryCount($args['category'])
                     : ['error' => 'Category name is required.'],
-
-            'get_item_expiry_status' =>
-                !empty($args['item_name'])
-                    ? $this->inventory->getItemExpiryStatus($args['item_name'])
-                    : ['error' => 'Item name is required to check expiry status.'],
-
-            'get_expired_items' =>
-                $this->inventory->getExpiredItems(),
+            
+            'create_inventory_item' =>
+                $this->inventory->createItem($args),
+            
+            'update_inventory_item' =>
+                !empty($args['name'])
+                    ? $this->inventory->updateItem($args['name'], [
+                        'quantity'        => $args['quantity'] ?? null,
+                        'minimum_stock'   => $args['minimum_stock'] ?? null,
+                        'category'        => $args['category'] ?? null,
+                        'expiration_date' => $args['expiration_date'] ?? null,
+                    ])
+                    : ['error' => 'Item name is required to update.'],
+                    
+            'delete_inventory_item' =>
+                (!empty($args['name']) && !empty($args['confirmed']) && $args['confirmed'] === true)
+                    ? $this->inventory->deleteItem($args['name'])
+                    : ['message' => 'Deletion cancelled or not yet confirmed.'],
 
             default => ['error' => "Unknown function: {$name}"],
         };

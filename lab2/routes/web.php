@@ -14,5 +14,6 @@ Route::delete('inventory/{id}/force-delete', [InventoryController::class, 'force
 Route::get('inventory/critical', [InventoryController::class, 'critical'])->name('inventory.critical');
 
 Route::resource('inventory', InventoryController::class);
+Route::post('/assistant', [AIAssistantController::class, 'sendMessage'])->name('assistant');
 
 Route::post('/chatbot', [ChatBotController::class, 'sendMessage'])->name('chat');

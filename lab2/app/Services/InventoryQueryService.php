@@ -38,7 +38,7 @@ class InventoryQueryService
 
     public function getItemQuantity(string $itemName): array
     {
-        $item = Inventory::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($itemName) . '%'])
+        $item = Inventory::where('name', 'like', '%' . $itemName . '%')
             ->first(['name', 'category', 'quantity']);
 
         if (!$item) {
@@ -70,30 +70,14 @@ class InventoryQueryService
 
     public function getCategoryCount(string $category): array
     {
-        $items = Inventory::whereRaw('LOWER(category) LIKE ?', ['%' . strtolower($category) . '%'])
-            ->orderBy('name', 'asc')
-            ->limit(20)
-            ->get();
+        $count = Inventory::where('category', 'like', '%' . $category . '%')->count();
+        $totalQuantity = Inventory::where('category', 'like', '%' . $category . '%')->sum('quantity');
+        $lowStock = Inventory::where('category', 'like', '%' . $category . '%')
+            ->whereColumn('quantity', '<=', 'minimum_stock')
+            ->count();
 
-        if ($items->isEmpty()) {
+        if ($count === 0) {
             return ['error' => "No items found in category: {$category}"];
-        }
-
-        $count = $items->count();
-        $totalQuantity = $items->sum('quantity');
-        $lowStock = $items->filter(function ($item) {
-            return $item->quantity <= $item->minimum_stock;
-        })->count();
-
-        $itemsList = [];
-        foreach ($items as $item) {
-            $itemsList[] = [
-                'name' => $item->name,
-                'quantity' => $item->quantity,
-                'minimum_stock' => $item->minimum_stock,
-                'is_low_stock' => $item->quantity <= $item->minimum_stock,
-                'expiration_date' => $item->expiration_date ? $item->expiration_date->format('Y-m-d') : null,
-            ];
         }
 
         return [
@@ -101,56 +85,75 @@ class InventoryQueryService
             'itemCount' => $count,
             'totalQuantity' => $totalQuantity,
             'lowStock' => $lowStock,
-            'items' => $itemsList,
         ];
     }
 
-    public function getItemExpiryStatus(string $itemName): array
+    public function createItem(array $data): array
     {
-        $item = Inventory::whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($itemName) . '%'])
-            ->first(['name', 'category', 'expiration_date']);
+        try {
+            $item = Inventory::create([
+                'name' => $data['name'],
+                'quantity' => (int) $data['quantity'],
+                'minimum_stock' => (int) ($data['minimum_stock'] ?? 5),
+                'expiration_date' => $data['expiration_date'] ?? null,
+                'category' => $data['category'] ?? null,
+            ]);
+
+            return [
+                'success' => true,
+                'message' => "Successfully added '{$item->name}' to inventory.",
+                'item'    => [
+                    'name'          => $item->name,
+                    'category'      => $item->category,
+                    'quantity'      => $item->quantity,
+                    'minimum_stock' => $item->minimum_stock,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Failed to create: ' . $e->getMessage()];
+        }
+    }
+
+    public function updateItem(string $name, array $fields): array
+    {
+        $item = Inventory::where('name', 'ILIKE', "%{$name}%")->first();
 
         if (!$item) {
-            return ['error' => 'Item not found'];
+            return ['success' => false, 'error' => 'Item not found'];
         }
 
-        $status = $item->expiry_status; // Uses the model attribute
-
-        $message = match ($status) {
-            'expired' => 'This item has already expired.',
-            'warning' => 'This item is expiring soon (within 5 months).',
-            'safe' => 'This item is safe and not expiring soon.',
-            default => 'Expiry status unknown.'
-        };
+        $updateData = array_filter($fields, fn($v) => $v !== null);
+        $item->update($updateData);
+        $item->refresh();
 
         return [
-            'name' => $item->name,
-            'expiry_status' => $status,
-            'expiration_date' => $item->expiration_date?->format('Y-m-d'),
-            'message' => $message,
+            'success' => true,
+            'message' => "Successfully updated '{$item->name}'.",
+            'update_fields' => array_keys($updateData),
+            'item'    => [
+                'name'          => $item->name,
+                'category'      => $item->category,
+                'quantity'      => $item->quantity,
+                'minimum_stock' => $item->minimum_stock,
+            ]
         ];
     }
 
-    public function getExpiredItems(): array
+    public function deleteItem(string $name): array
     {
-        $items = Inventory::whereNotNull('expiration_date')
-            ->whereDate('expiration_date', '<', now())
-            ->orderBy('expiration_date', 'desc')
-            ->limit(10)
-            ->get(['name', 'category', 'quantity', 'expiration_date']);
+        $item = Inventory::where('name', 'ILIKE', "%{$name}%")->first();
 
-        if ($items->isEmpty()) {
-            return [
-                'items' => [],
-                'count' => 0,
-                'message' => 'No expired items found.'
-            ];
+        if (!$item) {
+            return ['success' => false, 'error' => 'Item not found'];
         }
 
+        $itemName = $item->name;
+        $item->delete();
+
         return [
-            'items' => $items->toArray(),
-            'count' => $items->count(),
-            'message' => "Found {$items->count()} expired item(s) that need to be discarded."
+            'success' => true,
+            'message' => "Successfully deleted '{$itemName}' from inventory.",
         ];
     }
+
 }
